@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BW16 + ESP32-S3 面包板接线图（V3 · UART 已改右排 LP_UART 脚）</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%23171c26"/><rect x="4" y="6" width="24" height="7" fill="%23ff6b6b"/><rect x="4" y="15" width="24" height="7" fill="%233f7ad6"/><circle cx="16" cy="27" r="3.5" fill="%23ffd23f"/></svg>'>
+<style>
+  :root{
+    --bg:#171c26; --panel:#1e2430; --line:#3a465c; --txt:#e8ecf3; --sub:#9fb0c8; --dim:#5f6b80;
+    --ylw:#ffd23f; --grn:#7ee081; --blk:#3a3f4b; --red:#ff6b6b; --blu:#6fb7ff; --pur:#c792ea; --org:#ffa94d;
+  }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--bg); color:var(--txt); margin:0; padding:22px 24px 40px; }
+  .wrap{ max-width:1780px; margin:0 auto; }
+  h1{ font-size:21px; margin:0 0 6px; line-height:1.4; }
+  .sub{ color:var(--sub); font-size:13px; line-height:1.75; max-width:1200px; }
+  .sub b{ color:#ffd166; font-weight:bold; }
+  .legend{ margin:14px 0 4px; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .chip{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:#dfe6f2; background:#242c3a; border:1px solid #33405a; padding:4px 10px; border-radius:6px; cursor:pointer; user-select:none; }
+  .chip i{ width:14px; height:14px; border-radius:3px; display:inline-block; flex:none; }
+  .chip:hover{ outline:2px solid #4d5f80; }
+  .chip.pinned{ outline:2px solid #ffd166; background:#2c3648; }
+  .hint{ color:var(--dim); font-size:12px; margin:6px 0 12px; }
+  svg{ width:100%; height:auto; display:block; background:#141922; border-radius:12px; }
+  h2{ font-size:16px; margin:28px 0 6px; color:#ffd166; }
+  .tblwrap{ overflow-x:auto; }
+  table{ border-collapse:collapse; font-size:13px; margin-top:6px; width:100%; table-layout:fixed; }
+  td, th{ border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top; word-break:break-word; }
+  th{ background:#2a3346; font-weight:bold; }
+  tr:nth-child(even) td{ background:#1b2230; }
+  .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:-1px; margin-right:5px; }
+  .note{ color:var(--sub); font-size:13px; line-height:1.85; }
+  .warn{ color:#ff8a80; font-weight:bold; font-size:13px; line-height:1.9; }
+  .box{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-top:14px; }
+
+  /* 交互 */
+  .wire{ transition:opacity .12s ease; cursor:pointer; }
+  .wire.dim{ opacity:.08; }
+  .wire.on{ opacity:1; stroke-width:7; }
+  .ep, .badge{ transition:opacity .12s ease; }
+  .ep.dim, .badge.dim{ opacity:.1; }
+  .ep.on{ opacity:1; r:5.5; }
+  .badge.on{ opacity:1; }
+  .pinc{ cursor:pointer; }
+  #tip{ position:fixed; pointer-events:none; background:#0d1119; border:1px solid #46536d; border-radius:8px; padding:9px 13px; font-size:12.5px; color:#e8ecf3; max-width:430px; display:none; z-index:99; box-shadow:0 8px 28px rgba(0,0,0,.5); line-height:1.6; }
+  #tip b{ color:#ffd166; font-weight:bold; }
+  #tip .t2{ color:var(--sub); }
+  #tip .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; vertical-align:-1px; }
+  @media (max-width:760px){
+    body{ padding:12px 12px 30px; }
+    h1{ font-size:18px; }
+    .chip{ font-size:11.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>BW16 + ESP32-S3 控制中心 · 面包板接线示意图（V3）</h1>
+<div class="sub"><b style="color:#7ee081">V3 变更（2026-10-01 实测修正）：</b>UART 两根线不再接左排的 LP_I2C_SCL/SDA（=PA25/PA26，被 I2C 功能占用，LP_UART 硬件 mux 无法路由到这两个脚，接了串口无声），改为接<b>右排的 LP_UART_RXD（第 8 根）和 LP_UART_TXD（第 9 根）</b>——这是固件 Serial1 的默认脚 PB1/PB2。其余接线与 V2 相同。原 V2 图中「PA25/PA26 即丝印 D7/D8」的说法作废。</div>
+<div class="sub" style="margin-top:6px">实物事实：ESP32-S3-DevKitC-1 与 BW16-Kit 两排引脚间距均为 <b>22.86mm（900mil）</b>，跨不进标准 830 面包板的中槽（中槽只容 600mil = 15.24mm 器件）。所以两块板都放在面包板旁边用杜邦线跳接；面包板上只插 OLED 和你手上的「四位独立按键模块」。GND 全部汇到蓝轨实现共地。</div>
+
+<div class="legend">
+  <span class="chip" data-group="uart"><i style="background:var(--ylw)"></i>黄 · S3 TX→BW16 LP_UART_RXD（#17）</span>
+  <span class="chip" data-group="uart"><i style="background:var(--grn)"></i>绿 · BW16 LP_UART_TXD→S3 RX（#18）</span>
+  <span class="chip" data-group="gnd"><i style="background:var(--blk)"></i>黑 · GND / 共地（#1-4、8、13）</span>
+  <span class="chip" data-group="pwr"><i style="background:var(--red)"></i>红 · 3V3→OLED VCC（#5）</span>
+  <span class="chip" data-group="i2c"><i style="background:var(--blu)"></i>蓝 · GPIO8→OLED SDA（#6）</span>
+  <span class="chip" data-group="i2c"><i style="background:var(--pur)"></i>紫 · GPIO9→OLED SCL（#7）</span>
+  <span class="chip" data-group="btn"><i style="background:var(--org)"></i>橙 · GPIO10-13→4键模块（#9-12）</span>
+</div>
+<div class="hint">提示：鼠标移到任意一条线、引脚或图例上，会单独高亮该线并显示从→到说明；再移开恢复全图。</div>
+
+<svg viewBox="0 0 1720 940" role="img" aria-label="面包板接线示意图">
+  <defs>
+    <pattern id="holes" width="26" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="13" cy="6" r="2.4" fill="#b9b2a2"/>
+    </pattern>
+    <pattern id="raildots" width="12" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="8" r="1.8" fill="rgba(255,255,255,0.55)"/>
+    </pattern>
+  </defs>
+
+  <!-- ============ 三块板标题 ============ -->
+  <text x="210" y="148" font-size="13" fill="#bcd2ee" text-anchor="middle" font-weight="bold">ESP32-S3-DevKitC-1（转 180°：USB 朝下，IO 列朝面包板）</text>
+  <text x="210" y="166" font-size="9.5" fill="#5a6478" text-anchor="middle">（引脚 = 实物丝印倒置后的顺序，GND 在靠 USB 一端）</text>
+  <text x="835" y="148" font-size="13" fill="#bcd2ee" text-anchor="middle" font-weight="bold">标准 830 孔面包板 · 只插 OLED + 4 键模块</text>
+  <text x="1495" y="148" font-size="13" fill="#bcd2ee" text-anchor="middle" font-weight="bold">BW16-Kit（RTL8720DN）</text>
+
+  <!-- ============ 面包板 ============ -->
+  <rect x="430" y="210" width="820" height="290" rx="10" fill="#f4f1ea" stroke="#d8d2c4" stroke-width="2"/>
+  <!-- 上红轨 -->
+  <rect x="438" y="218" width="804" height="16" fill="#e8453c" opacity="0.85"/>
+  <rect x="438" y="218" width="804" height="16" fill="url(#raildots)"/>
+  <text x="1160" y="228" font-size="9" fill="#ffffff" font-weight="bold">上红轨 +5V（不用）</text>
+  <!-- 上蓝轨 -->
+  <rect x="438" y="236" width="804" height="16" fill="#3f7ad6" opacity="0.85"/>
+  <rect x="438" y="236" width="804" height="16" fill="url(#raildots)"/>
+  <text x="700" y="246" font-size="9" fill="#ffffff" font-weight="bold">上蓝轨 GND(−)</text>
+  <!-- 上孔阵 a-e -->
+  <rect x="445" y="270" width="755" height="60" fill="url(#holes)"/>
+  <rect x="445" y="270" width="755" height="60" fill="none" stroke="#d8d2c4" stroke-width="1"/>
+  <!-- 中槽 -->
+  <rect x="445" y="332" width="755" height="14" fill="#ddd8cc"/>
+  <!-- 下孔阵 f-j -->
+  <rect x="445" y="348" width="755" height="60" fill="url(#holes)"/>
+  <rect x="445" y="348" width="755" height="60" fill="none" stroke="#d8d2c4" stroke-width="1"/>
+  <!-- 下蓝轨 -->
+  <rect x="438" y="420" width="804" height="16" fill="#3f7ad6" opacity="0.85"/>
+  <rect x="438" y="420" width="804" height="16" fill="url(#raildots)"/>
+  <text x="522" y="430" font-size="9" fill="#ffffff" font-weight="bold">下蓝轨 GND(−)</text>
+  <!-- 下红轨 -->
+  <rect x="438" y="438" width="804" height="16" fill="#e8453c" opacity="0.85"/>
+  <rect x="438" y="438" width="804" height="16" fill="url(#raildots)"/>
+  <text x="700" y="448" font-size="9" fill="#ffffff" font-weight="bold">下红轨 +5V（不用）</text>
+
+  <!-- 列号 1-30（画在中槽） -->
+  <g font-size="7.5" fill="#8a93a3" text-anchor="middle">
+    <text x="458" y="340">1</text><text x="484" y="340">2</text><text x="510" y="340">3</text><text x="536" y="340">4</text><text x="562" y="340">5</text><text x="588" y="340">6</text><text x="614" y="340">7</text><text x="640" y="340">8</text><text x="666" y="340">9</text><text x="692" y="340">10</text><text x="718" y="340">11</text><text x="744" y="340">12</text><text x="770" y="340">13</text><text x="796" y="340">14</text><text x="822" y="340">15</text><text x="848" y="340">16</text><text x="874" y="340">17</text><text x="900" y="340">18</text><text x="926" y="340">19</text><text x="952" y="340">20</text><text x="978" y="340">21</text><text x="1004" y="340">22</text><text x="1030" y="340">23</text><text x="1056" y="340">24</text><text x="1082" y="340">25</text><text x="1108" y="340">26</text><text x="1134" y="340">27</text><text x="1160" y="340">28</text><text x="1186" y="340">29</text><text x="1212" y="340">30</text>
+  </g>
+  <!-- 行号 a-j -->
+  <g font-size="7" fill="#8a93a3" text-anchor="end">
+    <text x="441" y="279">a</text><text x="441" y="291">b</text><text x="441" y="303">c</text><text x="441" y="315">d</text><text x="441" y="327">e</text><text x="441" y="357">f</text><text x="441" y="369">g</text><text x="441" y="381">h</text><text x="441" y="393">i</text><text x="441" y="405">j</text>
+  </g>
+
+  <!-- ============ OLED 0.96"（插 e 行 2-5 列） ============ -->
+  <g>
+    <rect x="466" y="120" width="168" height="190" rx="6" fill="#2d2a4a" stroke="#171431" stroke-width="2"/>
+    <rect x="476" y="128" width="148" height="58" rx="3" fill="#0b0a14"/>
+    <text x="550" y="162" font-size="11" fill="#8d87c9" text-anchor="middle">0.96" OLED</text>
+    <text x="550" y="212" font-size="9" fill="#7a8496" text-anchor="middle">SSD1306 I2C · 4 针顺序照丝印</text>
+    <text x="550" y="230" font-size="9" fill="#ff8a80" text-anchor="middle">VCC / GND 接反会烧屏！</text>
+    <!-- 四脚 -->
+    <g fill="#e6c14c">
+      <rect x="481" y="310" width="6" height="14"/><rect x="507" y="310" width="6" height="14"/>
+      <rect x="533" y="310" width="6" height="14"/><rect x="559" y="310" width="6" height="14"/>
+    </g>
+    <g font-size="9" fill="#cfc8f5" text-anchor="middle" font-weight="bold">
+      <text x="484" y="302">GND</text><text x="510" y="302">VCC</text>
+      <text x="536" y="302">SCL</text><text x="562" y="302">SDA</text>
+    </g>
+  </g>
+
+  <!-- ============ 四位独立按键模块（插 e 行 8-12 列：GND、K4、K3、K2、K1） ============ -->
+  <g>
+    <!-- 模块体（绿色 PCB，悬在面包板上方） -->
+    <rect x="636" y="120" width="142" height="196" rx="6" fill="#2e8b57" stroke="#1c5c38" stroke-width="2"/>
+    <text x="707" y="112" font-size="9.5" fill="#9fe0b5" text-anchor="middle" font-weight="bold">四位独立按键模块</text>
+    <!-- 四个按键（左→右 = 上/下/确认/返回） -->
+    <g data-wire="9" data-group="btn" class="pinc">
+      <rect x="650" y="168" width="32" height="32" rx="4" fill="#b9c2cc" stroke="#6b7684" stroke-width="1.5"/>
+      <circle cx="666" cy="184" r="4" fill="#7d8794"/>
+    </g>
+    <g data-wire="10" data-group="btn" class="pinc">
+      <rect x="676" y="168" width="32" height="32" rx="4" fill="#b9c2cc" stroke="#6b7684" stroke-width="1.5"/>
+      <circle cx="692" cy="184" r="4" fill="#7d8794"/>
+    </g>
+    <g data-wire="11" data-group="btn" class="pinc">
+      <rect x="702" y="168" width="32" height="32" rx="4" fill="#b9c2cc" stroke="#6b7684" stroke-width="1.5"/>
+      <circle cx="718" cy="184" r="4" fill="#7d8794"/>
+    </g>
+    <g data-wire="12" data-group="btn" class="pinc">
+      <rect x="728" y="168" width="32" height="32" rx="4" fill="#b9c2cc" stroke="#6b7684" stroke-width="1.5"/>
+      <circle cx="744" cy="184" r="4" fill="#7d8794"/>
+    </g>
+    <!-- 功能标签（按钮上方） -->
+    <g font-size="10" fill="#eafff2" text-anchor="middle" font-weight="bold">
+      <text x="666" y="130">上</text><text x="692" y="130">下</text>
+      <text x="718" y="130">确认</text><text x="744" y="130">返回</text>
+    </g>
+    <!-- 丝印 S4-S1 / C4-C1（按钮下方，照实物） -->
+    <g font-size="7.5" fill="#c8ecd6" text-anchor="middle">
+      <text x="666" y="216">S4</text><text x="692" y="216">S3</text>
+      <text x="718" y="216">S2</text><text x="744" y="216">S1</text>
+    </g>
+    <g font-size="7" fill="#c8ecd6" text-anchor="middle">
+      <text x="666" y="230">C4</text><text x="692" y="230">C3</text>
+      <text x="718" y="230">C2</text><text x="744" y="230">C1</text>
+    </g>
+    <!-- 排针标签 -->
+    <g font-size="8.5" fill="#eafff2" text-anchor="middle" font-weight="bold">
+      <text x="640" y="302">GND</text><text x="666" y="302">K4</text>
+      <text x="692" y="302">K3</text><text x="718" y="302">K2</text><text x="744" y="302">K1</text>
+    </g>
+    <!-- 排针（插 e 行 8-12 列） -->
+    <g fill="#e6c14c">
+      <rect x="637" y="310" width="6" height="14"/><rect x="663" y="310" width="6" height="14"/>
+      <rect x="689" y="310" width="6" height="14"/><rect x="715" y="310" width="6" height="14"/>
+      <rect x="741" y="310" width="6" height="14"/>
+    </g>
+  </g>
+  <text x="1180" y="300" font-size="9" fill="#7a8496" text-anchor="end">模块排针插 e 行 8-12 列（GND、K4、K3、K2、K1），本体悬在面包板上方</text>
+
+  <!-- ============ ESP32-S3-DevKitC-1（左） ============ -->
+  <rect x="70" y="170" width="280" height="700" rx="10" fill="#20242b" stroke="#0c0e12" stroke-width="3"/>
+  <rect x="158" y="846" width="48" height="24" rx="4" fill="#8a939f"/>
+  <rect x="224" y="846" width="48" height="24" rx="4" fill="#8a939f"/>
+  <text x="210" y="892" font-size="9.5" fill="#7a8496" text-anchor="middle">USB-C ×2（供电 / 看串口日志）</text>
+
+  <!-- 右列（朝面包板）：转180°后自上而下 -->
+  <g>
+    <g fill="#56617a" font-size="10" text-anchor="end">
+      <text x="326" y="248">5V</text><text x="326" y="276">14</text>
+      <text x="326" y="444">46</text><text x="326" y="472">3</text>
+      <text x="326" y="584">16</text><text x="326" y="612">15</text><text x="326" y="640">7</text>
+      <text x="326" y="668">6</text><text x="326" y="696">5</text><text x="326" y="724">4</text>
+      <text x="326" y="752">RST</text><text x="326" y="808">3V3</text>
+    </g>
+    <g font-size="10" text-anchor="end" font-weight="bold">
+      <text x="326" y="304" fill="#ffa94d" data-wire="12">13</text>
+      <text x="326" y="332" fill="#ffa94d" data-wire="11">12</text>
+      <text x="326" y="360" fill="#ffa94d" data-wire="10">11</text>
+      <text x="326" y="388" fill="#ffa94d" data-wire="9">10</text>
+      <text x="326" y="416" fill="#c792ea" data-wire="7">9</text>
+      <text x="326" y="500" fill="#6fb7ff" data-wire="6">8</text>
+      <text x="326" y="528" fill="#7ee081" data-wire="18">18</text>
+      <text x="326" y="556" fill="#ffd23f" data-wire="17">17</text>
+      <text x="326" y="780" fill="#ff6b6b" data-wire="5">3V3</text>
+    </g>
+    <g fill="#e6c14c">
+      <rect x="332" y="240" width="10" height="10"/><rect x="332" y="268" width="10" height="10"/>
+      <rect x="332" y="296" width="10" height="10" data-wire="12" class="pinc"/><rect x="332" y="324" width="10" height="10" data-wire="11" class="pinc"/>
+      <rect x="332" y="352" width="10" height="10" data-wire="10" class="pinc"/><rect x="332" y="380" width="10" height="10" data-wire="9" class="pinc"/>
+      <rect x="332" y="408" width="10" height="10" data-wire="7" class="pinc"/><rect x="332" y="436" width="10" height="10"/>
+      <rect x="332" y="464" width="10" height="10"/><rect x="332" y="492" width="10" height="10" data-wire="6" class="pinc"/>
+      <rect x="332" y="520" width="10" height="10" data-wire="18" class="pinc"/><rect x="332" y="548" width="10" height="10" data-wire="17" class="pinc"/>
+      <rect x="332" y="576" width="10" height="10"/><rect x="332" y="604" width="10" height="10"/>
+      <rect x="332" y="632" width="10" height="10"/><rect x="332" y="660" width="10" height="10"/>
+      <rect x="332" y="688" width="10" height="10"/><rect x="332" y="716" width="10" height="10"/>
+      <rect x="332" y="744" width="10" height="10"/><rect x="332" y="772" width="10" height="10" data-wire="5" class="pinc"/>
+      <rect x="332" y="800" width="10" height="10"/>
+    </g>
+  </g>
+  <!-- 左列（背对面包板）：GND 在底部 -->
+  <g>
+    <g fill="#56617a" font-size="10">
+      <text x="104" y="248">19</text><text x="104" y="276">20</text>
+      <text x="104" y="304">21</text><text x="104" y="332">47</text>
+      <text x="104" y="360">48</text><text x="104" y="388">45</text>
+      <text x="104" y="416">0</text><text x="104" y="444">35</text>
+      <text x="104" y="472">36</text><text x="104" y="500">37</text>
+      <text x="104" y="528">38</text><text x="104" y="556">39</text>
+      <text x="104" y="584">40</text><text x="104" y="612">41</text>
+      <text x="104" y="640">42</text><text x="104" y="668">2</text>
+      <text x="104" y="696">1</text><text x="104" y="724">RXD0</text>
+      <text x="104" y="752">TXD0</text>
+    </g>
+    <text x="104" y="780" font-size="10" fill="#dfe6f2" font-weight="bold" data-wire="3">GND</text>
+    <text x="104" y="808" font-size="10" fill="#56617a">GND</text>
+    <g fill="#e6c14c">
+      <rect x="88" y="240" width="10" height="10"/><rect x="88" y="268" width="10" height="10"/>
+      <rect x="88" y="296" width="10" height="10"/><rect x="88" y="324" width="10" height="10"/>
+      <rect x="88" y="352" width="10" height="10"/><rect x="88" y="380" width="10" height="10"/>
+      <rect x="88" y="408" width="10" height="10"/><rect x="88" y="436" width="10" height="10"/>
+      <rect x="88" y="464" width="10" height="10"/><rect x="88" y="492" width="10" height="10"/>
+      <rect x="88" y="520" width="10" height="10"/><rect x="88" y="548" width="10" height="10"/>
+      <rect x="88" y="576" width="10" height="10"/><rect x="88" y="604" width="10" height="10"/>
+      <rect x="88" y="632" width="10" height="10"/><rect x="88" y="660" width="10" height="10"/>
+      <rect x="88" y="688" width="10" height="10"/><rect x="88" y="716" width="10" height="10"/>
+      <rect x="88" y="744" width="10" height="10"/><rect x="88" y="772" width="10" height="10" data-wire="3" class="pinc"/>
+      <rect x="88" y="800" width="10" height="10"/>
+    </g>
+  </g>
+  <text x="210" y="912" font-size="9.5" fill="#5a6478" text-anchor="middle">（引脚排列 = DevKitC-1 实物丝印倒置后的顺序，GND 在靠 USB 一端）</text>
+
+  <!-- ============ BW16-Kit（右） ============ -->
+  <rect x="1360" y="220" width="270" height="520" rx="10" fill="#1d3a63" stroke="#0e1e35" stroke-width="3"/>
+  <rect x="1470" y="716" width="48" height="24" rx="4" fill="#8a939f"/>
+  <text x="1495" y="762" font-size="9.5" fill="#ff8a80" text-anchor="middle" font-weight="bold">Micro-USB 独立供电（必须数据线！烧录也走这）</text>
+  <!-- 左列（实物丝印：GND/LP_PWM1/SWD_DATA/LP_I2C_SCL/LP_I2C_SDA/PA8_LOG_RXD/PA7_LOG_TXD/EN/GND/3V3/5V） -->
+  <g>
+    <text x="1386" y="278" font-size="10" fill="#dfe6f2" font-weight="bold" data-wire="4">GND</text>
+    <text x="1386" y="308" font-size="10" fill="#6a7c9c">LP_PWM1</text>
+    <text x="1386" y="338" font-size="10" fill="#6a7c9c">SWD_DATA</text>
+    <text x="1386" y="368" font-size="10" fill="#ff8a80">LP_I2C_SCL</text>
+    <text x="1386" y="386" font-size="8" fill="#ff8a80">（=PA25 · I2C 占用 · 勿接！）</text>
+    <text x="1386" y="412" font-size="10" fill="#ff8a80">LP_I2C_SDA</text>
+    <text x="1386" y="430" font-size="8" fill="#ff8a80">（=PA26 · I2C 占用 · 勿接！）</text>
+    <text x="1386" y="458" font-size="10" fill="#6a7c9c">PA8_LOG_RXD</text>
+    <text x="1386" y="488" font-size="10" fill="#6a7c9c">PA7_LOG_TXD</text>
+    <text x="1386" y="518" font-size="10" fill="#6a7c9c">EN</text>
+    <text x="1386" y="548" font-size="10" fill="#6a7c9c">GND</text>
+    <text x="1386" y="578" font-size="10" fill="#6a7c9c">3V3</text>
+    <text x="1386" y="608" font-size="10" fill="#6a7c9c">5V</text>
+    <g fill="#e6c14c">
+      <rect x="1370" y="270" width="10" height="10" data-wire="4" class="pinc"/>
+      <rect x="1370" y="300" width="10" height="10"/><rect x="1370" y="330" width="10" height="10"/>
+      <rect x="1370" y="360" width="10" height="10"/><rect x="1370" y="390" width="10" height="10"/>
+      <rect x="1370" y="420" width="10" height="10"/><rect x="1370" y="450" width="10" height="10"/>
+      <rect x="1370" y="480" width="10" height="10"/><rect x="1370" y="510" width="10" height="10"/>
+      <rect x="1370" y="540" width="10" height="10"/><rect x="1370" y="570" width="10" height="10"/>
+    </g>
+  </g>
+  <!-- 右列（实物丝印：GND/SPI1_CS/SPI1_CLK/SPI1_MISO/SPI1_MOSI/LP_PWM0/SWD_CLK/LP_UART_RXD/LP_UART_TXD/GND/3V3/5V） -->
+  <g>
+    <g font-size="10" text-anchor="end">
+      <text x="1608" y="278" fill="#6a7c9c">GND</text>
+      <text x="1608" y="308" fill="#6a7c9c">SPI1_CS</text>
+      <text x="1608" y="338" fill="#6a7c9c">SPI1_CLK</text>
+      <text x="1608" y="368" fill="#6a7c9c">SPI1_MISO</text>
+      <text x="1608" y="398" fill="#6a7c9c">SPI1_MOSI</text>
+      <text x="1608" y="428" fill="#6a7c9c">LP_PWM0</text>
+      <text x="1608" y="458" fill="#6a7c9c">SWD_CLK</text>
+      <text x="1608" y="488" fill="#ffd23f" font-weight="bold" data-wire="17">LP_UART_RXD（PB2）RX</text>
+      <text x="1608" y="518" fill="#7ee081" font-weight="bold" data-wire="18">LP_UART_TXD（PB1）TX</text>
+      <text x="1608" y="548" fill="#6a7c9c">GND</text>
+      <text x="1608" y="578" fill="#6a7c9c">3V3</text>
+      <text x="1608" y="608" fill="#6a7c9c">5V</text>
+    </g>
+    <g fill="#e6c14c">
+      <rect x="1620" y="270" width="10" height="10"/><rect x="1620" y="300" width="10" height="10"/>
+      <rect x="1620" y="330" width="10" height="10"/><rect x="1620" y="360" width="10" height="10"/>
+      <rect x="1620" y="390" width="10" height="10"/><rect x="1620" y="420" width="10" height="10"/>
+      <rect x="1620" y="450" width="10" height="10"/>
+      <rect x="1620" y="480" width="10" height="10" data-wire="17" class="pinc"/>
+      <rect x="1620" y="510" width="10" height="10" data-wire="18" class="pinc"/>
+      <rect x="1620" y="540" width="10" height="10"/><rect x="1620" y="570" width="10" height="10"/>
+      <rect x="1620" y="600" width="10" height="10"/>
+    </g>
+  </g>
+  <circle cx="1400" cy="660" r="6" fill="#4da3ff"/>
+  <text x="1412" y="664" font-size="9.5" fill="#8aa5cc">RGB 灯（攻击=红闪，停止=蓝常亮）</text>
+  <text x="1495" y="700" font-size="9.5" fill="#8aa5cc" text-anchor="middle">Serial1 用 LP_UART 默认脚 PB1/PB2（右排 LP_UART_TXD/RXD）</text>
+  <text x="1495" y="716" font-size="9.5" fill="#8aa5cc" text-anchor="middle">（PA25/PA26 为 I2C 功能占用，固件已不再使用）</text>
+
+  <!-- ============ 18 根接线 ============ -->
+  <!-- #17 黄 F-F：S3 17(TX) -> BW16 LP_UART_RXD（右排第 8 根） -->
+  <path class="wire" data-wire="17" data-group="uart" d="M 337 548 C 345 300, 352 200, 380 200 L 1540 200 C 1610 200, 1625 320, 1625 480" fill="none" stroke="#ffd23f" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- #18 绿 F-F：BW16 LP_UART_TXD（右排第 9 根） -> S3 18(RX) -->
+  <path class="wire" data-wire="18" data-group="uart" d="M 1625 510 C 1625 600, 1560 640, 1500 640 L 500 640 C 420 640, 345 590, 337 520" fill="none" stroke="#7ee081" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- #1 黑 M-M：上蓝轨左端 -> 下蓝轨左端 -->
+  <path class="wire" data-wire="1" data-group="gnd" d="M 458 252 L 458 420" fill="none" stroke="#3a3f4b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #2 黑 M-M：上蓝轨右端 -> 下蓝轨右端 -->
+  <path class="wire" data-wire="2" data-group="gnd" d="M 1212 252 L 1212 420" fill="none" stroke="#3a3f4b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #3 黑 F-M：S3 GND -> 下蓝轨左端 -->
+  <path class="wire" data-wire="3" data-group="gnd" d="M 93 772 C 130 640, 300 520, 484 428" fill="none" stroke="#3a3f4b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #4 黑 F-M：BW16 GND -> 下蓝轨右端 -->
+  <path class="wire" data-wire="4" data-group="gnd" d="M 1375 270 C 1345 320, 1280 375, 1186 428" fill="none" stroke="#3a3f4b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #5 红 F-M：S3 3V3 -> OLED VCC -->
+  <path class="wire" data-wire="5" data-group="pwr" d="M 337 772 C 340 520, 350 300, 430 262 C 465 255, 500 288, 510 324" fill="none" stroke="#ff6b6b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #6 蓝 F-M：S3 8 -> OLED SDA -->
+  <path class="wire" data-wire="6" data-group="i2c" d="M 337 492 C 390 455, 490 365, 562 324" fill="none" stroke="#6fb7ff" stroke-width="4" stroke-linecap="round"/>
+  <!-- #7 紫 F-M：S3 9 -> OLED SCL -->
+  <path class="wire" data-wire="7" data-group="i2c" d="M 337 408 C 390 385, 470 345, 536 324" fill="none" stroke="#c792ea" stroke-width="4" stroke-linecap="round"/>
+  <!-- #8 黑 M-M：OLED GND -> 上蓝轨 -->
+  <path class="wire" data-wire="8" data-group="gnd" d="M 484 324 L 484 252" fill="none" stroke="#3a3f4b" stroke-width="4" stroke-linecap="round"/>
+  <!-- #9 橙 F-M：S3 GPIO10 -> 模块 K4（最左键=上） -->
+  <path class="wire" data-wire="9" data-group="btn" d="M 337 380 C 430 350, 540 332, 666 324" fill="none" stroke="#ffa94d" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- #10 橙 F-M：S3 GPIO11 -> 模块 K3（左二键=下） -->
+  <path class="wire" data-wire="10" data-group="btn" d="M 337 352 C 440 320, 580 332, 692 324" fill="none" stroke="#ffa94d" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- #11 橙 F-M：S3 GPIO12 -> 模块 K2（左三键=确认） -->
+  <path class="wire" data-wire="11" data-group="btn" d="M 337 324 C 430 338, 610 334, 718 324" fill="none" stroke="#ffa94d" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- #12 橙 F-M：S3 GPIO13 -> 模块 K1（最右键=返回） -->
+  <path class="wire" data-wire="12" data-group="btn" d="M 337 296 C 400 340, 640 334, 744 324" fill="none" stroke="#ffa94d" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- #13 黑 M-M：模块 GND（8 列）-> 下蓝轨 -->
+  <path class="wire" data-wire="13" data-group="gnd" d="M 640 324 L 640 420" fill="none" stroke="#3a3f4b" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- ============ 线编号徽标 ============ -->
+  <g class="badge" data-wire="17"><rect x="851" y="188" width="18" height="16" rx="3" fill="#ffd23f" stroke="rgba(255,255,255,0.4)"/><text x="860" y="199" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">17</text></g>
+  <g class="badge" data-wire="18"><rect x="851" y="630" width="18" height="16" rx="3" fill="#7ee081" stroke="rgba(255,255,255,0.4)"/><text x="860" y="641" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">18</text></g>
+  <g class="badge" data-wire="1"><rect x="449" y="388" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="458" y="399" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">1</text></g>
+  <g class="badge" data-wire="2"><rect x="1203" y="388" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="1212" y="399" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">2</text></g>
+  <g class="badge" data-wire="3"><rect x="291" y="637" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="300" y="648" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">3</text></g>
+  <g class="badge" data-wire="4"><rect x="1269" y="342" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="1278" y="353" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">4</text></g>
+  <g class="badge" data-wire="5"><rect x="386" y="537" width="18" height="16" rx="3" fill="#ff6b6b" stroke="rgba(255,255,255,0.4)"/><text x="395" y="548" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">5</text></g>
+  <g class="badge" data-wire="6"><rect x="443" y="417" width="18" height="16" rx="3" fill="#6fb7ff" stroke="rgba(255,255,255,0.4)"/><text x="452" y="428" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">6</text></g>
+  <g class="badge" data-wire="7"><rect x="404" y="360" width="18" height="16" rx="3" fill="#c792ea" stroke="rgba(255,255,255,0.4)"/><text x="413" y="371" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">7</text></g>
+  <g class="badge" data-wire="8"><rect x="486" y="282" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="495" y="293" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">8</text></g>
+  <g class="badge" data-wire="9"><rect x="612" y="330" width="18" height="16" rx="3" fill="#ffa94d" stroke="rgba(255,255,255,0.4)"/><text x="621" y="341" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">9</text></g>
+  <g class="badge" data-wire="10"><rect x="668" y="330" width="18" height="16" rx="3" fill="#ffa94d" stroke="rgba(255,255,255,0.4)"/><text x="677" y="341" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">10</text></g>
+  <g class="badge" data-wire="11"><rect x="694" y="330" width="18" height="16" rx="3" fill="#ffa94d" stroke="rgba(255,255,255,0.4)"/><text x="703" y="341" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">11</text></g>
+  <g class="badge" data-wire="12"><rect x="720" y="330" width="18" height="16" rx="3" fill="#ffa94d" stroke="rgba(255,255,255,0.4)"/><text x="729" y="341" font-size="9" fill="#141922" text-anchor="middle" font-weight="bold">12</text></g>
+  <g class="badge" data-wire="13"><rect x="622" y="384" width="18" height="16" rx="3" fill="#3a3f4b" stroke="rgba(255,255,255,0.35)"/><text x="631" y="395" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">13</text></g>
+
+  <!-- ============ 端点标记 ============ -->
+  <g stroke="#ffffff" stroke-width="1">
+    <circle class="ep" data-wire="17" cx="337" cy="548" r="4" fill="#ffd23f"/><circle class="ep" data-wire="17" cx="1625" cy="485" r="4" fill="#ffd23f"/>
+    <circle class="ep" data-wire="18" cx="337" cy="520" r="4" fill="#7ee081"/><circle class="ep" data-wire="18" cx="1625" cy="515" r="4" fill="#7ee081"/>
+    <circle class="ep" data-wire="1" cx="458" cy="252" r="4" fill="#3a3f4b"/><circle class="ep" data-wire="1" cx="458" cy="420" r="4" fill="#3a3f4b"/>
+    <circle class="ep" data-wire="2" cx="1212" cy="252" r="4" fill="#3a3f4b"/><circle class="ep" data-wire="2" cx="1212" cy="420" r="4" fill="#3a3f4b"/>
+    <circle class="ep" data-wire="3" cx="93" cy="772" r="4" fill="#3a3f4b"/><circle class="ep" data-wire="3" cx="484" cy="428" r="4" fill="#3a3f4b"/>
+    <circle class="ep" data-wire="4" cx="1375" cy="270" r="4" fill="#3a3f4b"/><circle class="ep" data-wire="4" cx="1186" cy="428" r="4" fill="#3a3f4b"/>
+    <circle class="ep" data-wire="5" cx="337" cy="772" r="4" fill="#ff6b6b"/><circle class="ep" data-wire="5" cx="510" cy="324" r="4" fill="#ff6b6b"/>
+    <circle class="ep" data-wire="6" cx="337" cy="492" r="4" fill="#6fb7ff"/><circle class="ep" data-wire="6" cx="562" cy="324" r="4" fill="#6fb7ff"/>
+    <circle class="ep" data-wire="7" cx="337" cy="408" r="4" fill="#c792ea"/><circle class="ep" data-wire="7" cx="536" cy="324" r="4" fill="#c792ea"/>
+    <circle class="ep" data-wire="8" cx="484" cy="324" r="4" fill="#3a3f4b"/><circle class="ep" data-wire="8" cx="484" cy="252" r="4" fill="#3a3f4b"/>
+    <circle class="ep" data-wire="9" cx="337" cy="380" r="3.5" fill="#ffa94d"/><circle class="ep" data-wire="9" cx="666" cy="324" r="3.5" fill="#ffa94d"/>
+    <circle class="ep" data-wire="10" cx="337" cy="352" r="3.5" fill="#ffa94d"/><circle class="ep" data-wire="10" cx="692" cy="324" r="3.5" fill="#ffa94d"/>
+    <circle class="ep" data-wire="11" cx="337" cy="324" r="3.5" fill="#ffa94d"/><circle class="ep" data-wire="11" cx="718" cy="324" r="3.5" fill="#ffa94d"/>
+    <circle class="ep" data-wire="12" cx="337" cy="296" r="3.5" fill="#ffa94d"/><circle class="ep" data-wire="12" cx="744" cy="324" r="3.5" fill="#ffa94d"/>
+    <circle class="ep" data-wire="13" cx="640" cy="324" r="3.5" fill="#3a3f4b"/><circle class="ep" data-wire="13" cx="640" cy="420" r="3.5" fill="#3a3f4b"/>
+  </g>
+</svg>
+
+<h2>照着插清单（按顺序，共 13 根线，编号与图上徽标一致）</h2>
+<div class="tblwrap"><table>
+<colgroup><col style="width:7%"><col style="width:17%"><col style="width:11%"><col style="width:65%"></colgroup>
+<tr><th>#</th><th>线</th><th>类型</th><th>从 → 到</th></tr>
+<tr><td>0</td><td>—</td><td>—</td><td>先把 OLED（4 针插 e 行 2-5 列）和四位独立按键模块（排针插 e 行 8-12 列：GND、K4、K3、K2、K1）插上面包板</td></tr>
+<tr><td>1</td><td><span class="dot" style="background:#3a3f4b"></span>黑 公对公</td><td>桥接</td><td>上蓝轨左端（1 列）→ 下蓝轨左端（1 列）</td></tr>
+<tr><td>2</td><td><span class="dot" style="background:#3a3f4b"></span>黑 公对公</td><td>桥接</td><td>上蓝轨右端（30 列）→ 下蓝轨右端（30 列）</td></tr>
+<tr><td>3</td><td><span class="dot" style="background:#3a3f4b"></span>黑 母对公</td><td>共地</td><td>S3 GND（左列靠 USB 最底下两脚任一）→ 下蓝轨左端（2 列）</td></tr>
+<tr><td>4</td><td><span class="dot" style="background:#3a3f4b"></span>黑 母对公</td><td>共地</td><td>BW16 GND（排针第 1 脚）→ 下蓝轨右端（29 列）</td></tr>
+<tr><td>5</td><td><span class="dot" style="background:#ff6b6b"></span>红 母对公</td><td>供电</td><td>S3 3V3（右列靠下，两个 3V3 任一）→ OLED VCC 所在列（3 列）</td></tr>
+<tr><td>6</td><td><span class="dot" style="background:#6fb7ff"></span>蓝 母对公</td><td>I2C</td><td>S3 GPIO8 → OLED SDA 所在列（5 列）</td></tr>
+<tr><td>7</td><td><span class="dot" style="background:#c792ea"></span>紫 母对公</td><td>I2C</td><td>S3 GPIO9 → OLED SCL 所在列（4 列）</td></tr>
+<tr><td>8</td><td><span class="dot" style="background:#3a3f4b"></span>黑 公对公</td><td>OLED地</td><td>OLED GND 所在列（2 列）→ 上蓝轨</td></tr>
+<tr><td>9</td><td><span class="dot" style="background:#ffa94d"></span>橙 母对公</td><td>按键</td><td>S3 GPIO10 → 模块 K4（最左键＝上，9 列）</td></tr>
+<tr><td>10</td><td><span class="dot" style="background:#ffa94d"></span>橙 母对公</td><td>按键</td><td>S3 GPIO11 → 模块 K3（左二键＝下，10 列）</td></tr>
+<tr><td>11</td><td><span class="dot" style="background:#ffa94d"></span>橙 母对公</td><td>按键</td><td>S3 GPIO12 → 模块 K2（左三键＝确认，11 列）</td></tr>
+<tr><td>12</td><td><span class="dot" style="background:#ffa94d"></span>橙 母对公</td><td>按键</td><td>S3 GPIO13 → 模块 K1（最右键＝返回，12 列）</td></tr>
+<tr><td>13</td><td><span class="dot" style="background:#3a3f4b"></span>黑 公对公</td><td>按键地</td><td>模块 GND 引脚（8 列）→ 下蓝轨</td></tr>
+<tr><td>17</td><td><span class="dot" style="background:#ffd23f"></span>黄 母对母</td><td>UART</td><td>S3 GPIO17 (TX) → BW16 <b>LP_UART_RXD</b>（右排第 8 根，=PB2）</td></tr>
+<tr><td>18</td><td><span class="dot" style="background:#7ee081"></span>绿 母对母</td><td>UART</td><td>BW16 <b>LP_UART_TXD</b>（右排第 9 根，=PB1）→ S3 GPIO18 (RX)</td></tr>
+</table></div>
+<p class="note">OLED 的 GND/VCC/SCL/SDA 只要和它自己插的那几列对应即可，不必挨着图中位置；但 4 针顺序务必照模块丝印（常见 GND-VCC-SCL-SDA），VCC/GND 接反会烧屏。按键就是你手上的「四位独立按键模块」：排针丝印从左到右为 GND、K4、K3、K2、K1，对应四个键（左→右 = 上/下/确认/返回，即 S4/S3/S2/S1）。C1-C4 已在模块内部连到 GND，不用额外接地；如果你想让键位顺序反过来，在固件 config.h 里改 GPIO10-13 的按键映射即可，或直接对调橙线。</p>
+
+<h2>采购清单（如果还没凑齐）</h2>
+<div class="tblwrap"><table>
+<colgroup><col style="width:26%"><col style="width:54%"><col style="width:20%"></colgroup>
+<tr><th>物品</th><th>规格要求</th><th>参考价</th></tr>
+<tr><td>ESP32-S3 开发板</td><td>DevKitC-1 型（N8R2 / N16R8 都行，带 WiFi）</td><td>¥25-45</td></tr>
+<tr><td>OLED 屏</td><td>0.96寸 SSD1306 I2C 4针（推荐）或 1.3寸 SH1106 I2C（改 config.h 的 OLED_USE_SH1106=1）</td><td>¥10-15</td></tr>
+<tr><td>4 键模块</td><td>四位独立按键模块（丝印 GND/K1-K4 排针，就是你现在这块）；没有的话也可用 4 颗 6mm 轻触开关</td><td>¥3-8</td></tr>
+<tr><td>面包板</td><td>830 孔标准板 ×1</td><td>¥5</td></tr>
+<tr><td>杜邦线</td><td>母对母 ×10、母对公 ×10、公对公 ×10（按图用 2+9+7 根，留备件）</td><td>¥5-8</td></tr>
+<tr><td>USB 数据线</td><td>BW16 是 Micro-USB（必须数据线！），S3 用 USB-C</td><td>—</td></tr>
+</table></div>
+
+<div class="box">
+<p class="warn">最容易翻车的四个点：① 共地黑线（#3、#4 两根 + 桥接）一根都不能省，S3、BW16、OLED、4键模块的地全靠蓝轨汇成一点；② BW16 的 USB 线必须是数据线（之前烧录卡死就是充电线惹的祸）；③ 两块板各自插自己的 USB 电源，不要用 S3 给 BW16 供电；④ BW16 侧接<b>右排</b>：S3 的 TX(17)→LP_UART_RXD（右排第 8 根），LP_UART_TXD（右排第 9 根）→S3 的 RX(18)，黄绿交叉；接反了 OLED 会一直显示「离线」，对调两根线即可。<b>左排的 LP_I2C_SCL/SDA（=PA25/PA26）是 I2C 功能占用，LP_UART 硬件 mux 无法路由到这两个脚，千万别接那里——V2 图的 UART 接法就是错在这里。</b></p>
+<p class="note">本图按实物画：S3 引脚为 DevKitC-1 丝印顺序（图里转了 180°，IO 列朝面包板，GND 落在靠 USB 一端）；BW16 侧串口用右排丝印 <b>LP_UART_RXD / LP_UART_TXD</b>（即 LP_UART 默认脚 PB2/PB1），两脚相邻。首次上电调试清单见同目录 <b>wiring.md</b>。</p>
+<div class="box">
+<p class="note"><b style="color:#7ee081">V3 变更记录（2026-10-01）：</b>① UART 两根线由左排 PA25/PA26（丝印 LP_I2C_SCL/SDA）改到右排 LP_UART_RXD/LP_UART_TXD；② 原因：LP_UART 硬件 mux 合法组合为 TX∈{PB1,PA26,PA12}、RX∈{PB2,PA25,PA13}，但 PA25/PA26 同时被 I2C 功能占用（开机初始化 OLED 时输出 I2C 波形），实测串口无法工作；③ V2 图中「PA25/PA26 即丝印 D7/D8、两脚相邻」的说法作废——那是裸模组的引脚图，与 BW16-Kit 实板不符；④ BW16 固件 serial_api.h 已删除重映射代码（同步修正）。</p>
+<p class="note"><b style="color:#ffd166">运维要点（2026-10-02 补充）：</b>① BW16 每次重启（按 RST / 断电）后：网页里<b>重新点一次「扫描」</b>（扫描列表和选中状态都会清空），再重新选目标；② 串口失联 15 秒内 RX 看门狗自动重建串口自愈，无需碰板子；③ 高级干扰页自带「选择目标 AP」下拉框，也可在扫描页点「设为目标」；④ 扫不到手机热点时：保持热点开启（熄屏会自动关）、频段固定 2.4GHz、开完热点重新扫描；⑤ 固件已改 STA 模式启动（串口模式），AP 模式仅热点/钓鱼路径使用。</p>
+</div>
+</div>
+
+</div>
+<div id="tip"></div>
+<script>
+(function(){
+  var W = {
+    "1":["#3a3f4b","黑 公对公","桥接","上蓝轨左端（1 列）→ 下蓝轨左端（1 列）"],
+    "2":["#3a3f4b","黑 公对公","桥接","上蓝轨右端（30 列）→ 下蓝轨右端（30 列）"],
+    "3":["#3a3f4b","黑 母对公","共地","S3 GND（左列靠 USB 最底下两脚任一）→ 下蓝轨左端（2 列）"],
+    "4":["#3a3f4b","黑 母对公","共地","BW16 GND（排针第 1 脚）→ 下蓝轨右端（29 列）"],
+    "5":["#ff6b6b","红 母对公","供电","S3 3V3（两个 3V3 任一）→ OLED VCC 所在列（3 列）"],
+    "6":["#6fb7ff","蓝 母对公","I2C","S3 GPIO8 → OLED SDA 所在列（5 列）"],
+    "7":["#c792ea","紫 母对公","I2C","S3 GPIO9 → OLED SCL 所在列（4 列）"],
+    "8":["#3a3f4b","黑 公对公","OLED地","OLED GND 所在列（2 列）→ 上蓝轨"],
+    "9":["#ffa94d","橙 母对公","按键","S3 GPIO10 → 模块 K4（最左键＝上，9 列）"],
+    "10":["#ffa94d","橙 母对公","按键","S3 GPIO11 → 模块 K3（左二键＝下，10 列）"],
+    "11":["#ffa94d","橙 母对公","按键","S3 GPIO12 → 模块 K2（左三键＝确认，11 列）"],
+    "12":["#ffa94d","橙 母对公","按键","S3 GPIO13 → 模块 K1（最右键＝返回，12 列）"],
+    "13":["#3a3f4b","黑 公对公","按键地","模块 GND 引脚（8 列）→ 下蓝轨"],
+    "17":["#ffd23f","黄 母对母","UART","S3 GPIO17 (TX) → BW16 LP_UART_RXD（右排第 8 根，=PB2）"],
+    "18":["#7ee081","绿 母对母","UART","BW16 LP_UART_TXD（右排第 9 根，=PB1）→ S3 GPIO18 (RX)"]
+  };
+  var G = {
+    "gnd":"黑线组 · GND / 共地：S3、BW16、OLED、4键模块的地全部汇到蓝轨（上下蓝轨已桥接成一点）",
+    "pwr":"红线组 · 供电：S3 3V3 → OLED VCC（两个 3V3 任选其一）",
+    "i2c":"蓝紫线组 · I2C：GPIO8→SDA（蓝 #6），GPIO9→SCL（紫 #7）",
+    "uart":"黄绿线组 · UART：黄=S3 TX(17)→BW16 LP_UART_RXD(右排第8)，绿=BW16 LP_UART_TXD(右排第9)→S3 RX(18)",
+    "btn":"橙线组 · 按键：GPIO10/11/12/13 → 模块 K4/K3/K2/K1（上/下/确认/返回）"
+  };
+  var tip = document.getElementById('tip');
+  var pinned = null;
+  function showTip(html){ tip.innerHTML = html; tip.style.display = 'block'; }
+  function hideTip(){ tip.style.display = 'none'; }
+  function clearState(){
+    document.querySelectorAll('.wire,.ep,.badge,.pinc').forEach(function(e){ e.classList.remove('dim','on'); });
+  }
+  function focusBy(attr, val){
+    clearState();
+    document.querySelectorAll('[data-wire],[data-group]').forEach(function(e){
+      if(e.getAttribute(attr) === val){ e.classList.add('on'); }
+      else { e.classList.add('dim'); }
+    });
+  }
+  function restore(){
+    if(pinned){ focusBy('data-group', pinned); }
+    else { clearState(); }
+  }
+  document.querySelectorAll('[data-wire]').forEach(function(el){
+    el.addEventListener('mouseenter', function(){
+      var id = el.getAttribute('data-wire');
+      focusBy('data-wire', id);
+      var w = W[id];
+      if(w){ showTip('<span class="sw" style="background:' + w[0] + '"></span><b>#' + id + ' ' + w[1] + '</b>　<span class="t2">' + w[2] + '</span><br>' + w[3]); }
+    });
+    el.addEventListener('mouseleave', function(){ restore(); hideTip(); });
+  });
+  document.querySelectorAll('.chip[data-group]').forEach(function(el){
+    var g = el.getAttribute('data-group');
+    function activate(){ focusBy('data-group', g); showTip('<b>' + G[g] + '</b>'); }
+    el.addEventListener('click', function(){
+      if(pinned === g){
+        pinned = null;
+        el.classList.remove('pinned');
+        clearState(); hideTip();
+      } else {
+        pinned = g;
+        document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('pinned'); });
+        el.classList.add('pinned');
+        activate();
+      }
+    });
+    el.addEventListener('mouseenter', activate);
+    el.addEventListener('mouseleave', function(){
+      if(pinned !== g){ clearState(); hideTip(); }
+    });
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); }
+    });
+    el.setAttribute('tabindex', '0');
+  });
+  document.addEventListener('mousemove', function(e){
+    if(tip.style.display !== 'none'){
+      var x = Math.min(e.clientX + 16, window.innerWidth - 440);
+      var y = Math.min(e.clientY + 16, window.innerHeight - 130);
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top = Math.max(8, y) + 'px';
+    }
+  });
+})();
+</script>
+</body>
+</html>
